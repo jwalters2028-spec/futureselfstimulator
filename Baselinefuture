@@ -1,0 +1,117 @@
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Link, useNavigate } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
+import { base44 } from '@/api/base44Client';
+import { Button } from '@/components/ui/button';
+import { ArrowRight, RefreshCw, Sparkles, Save } from 'lucide-react';
+import FutureNarrative from '@/components/FutureNarrative';
+import LoadingState from '@/components/LoadingState';
+import { toast } from 'sonner';
+
+export default function BaselineFuture() {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [profile, setProfile] = useState(null);
+  const [futurePath, setFuturePath] = useState(null);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    
+    // Get profile
+    const profiles = await base44.entities.BaselineProfile.list('-created_date', 1);
+    if (profiles.length === 0) {
+      navigate(createPageUrl('Intake'));
+      return;
+    }
+    setProfile(profiles[0]);
+
+    // Check for existing baseline future
+    const existingPaths = await base44.entities.FuturePath.filter(
+      { type: 'baseline' },
+      '-created_date',
+      1
+    );
+
+    if (existingPaths.length > 0) {
+      setFuturePath(existingPaths[0]);
+      setLoading(false);
+    } else {
+      await generateFuture(profiles[0]);
+    }
+  };
+
+  const generateFuture = async (profileData) => {
+    setLoading(true);
+
+    const prompt = `You are a "Future Self Simulator." Generate a compassionate, honest, non-clinical narrative for someone's future self based on their current habits.
+
+Current Profile:
+- Sleep: ${profileData.sleep_hours} hours/night
+- Work: ${profileData.work_hours} hours/day
+- Movement: ${profileData.movement_days} days/week
+- Screen time: ${profileData.screen_time} hours/day
+- Stress level: ${profileData.stress_level}/10
+- Fulfillment: ${profileData.fulfillment_level}/10
+- Relationship quality: ${profileData.relationship_quality}/10
+- Self-description: "${profileData.self_description || 'No description provided'}"
+
+Generate their future self for 1, 3, and 5 years if NOTHING changes. Use second-person ("You..."). Be vivid, empathetic, and honest. Focus on lifestyle, emotional tone, relationships, energy, and well-being. Never mention diseases or medical diagnoses.
+
+For each timeframe, also provide metrics (1-10 scale): energy, resilience, relationships, work, inner_life.`;
+
+    const response = await base44.integrations.Core.InvokeLLM({
+      prompt,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          narrative_1yr: { type: "string" },
+          narrative_3yr: { type: "string" },
+          narrative_5yr: { type: "string" },
+          metrics_1yr: { 
+            type: "object",
+            properties: {
+              energy: { type: "number" },
+              resilience: { type: "number" },
+              relationships: { type: "number" },
+              work: { type: "number" },
+              inner_life: { type: "number" }
+            }
+          },
+          metrics_3yr: { 
+            type: "object",
+            properties: {
+              energy: { type: "number" },
+              resilience: { type: "number" },
+              relationships: { type: "number" },
+              work: { type: "number" },
+              inner_life: { type: "number" }
+            }
+          },
+          metrics_5yr: { 
+            type: "object",
+            properties: {
+              energy: { type: "number" },
+              resilience: { type: "number" },
+              relationships: { type: "number" },
+              work: { type: "number" },
+              inner_life: { type: "number" }
+            }
+          }
+        }
+      }
+    });
+
+    // Delete old baseline paths
+    const oldPaths = await base44.entities.FuturePath.filter({ type: 'baseline' });
+    for (const path of oldPaths) {
+      await base44.entities.FuturePath.delete(path.id);
+    }
+
+    // Save new baseline
+ 
