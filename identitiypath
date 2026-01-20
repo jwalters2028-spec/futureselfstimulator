@@ -1,0 +1,117 @@
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
+import { base44 } from '@/api/base44Client';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { ArrowRight, ArrowLeft, Sparkles } from 'lucide-react';
+import IdentityTags from '@/components/IdentityTags';
+import FutureNarrative from '@/components/FutureNarrative';
+import LoadingState from '@/components/LoadingState';
+import { toast } from 'sonner';
+
+export default function IdentityPath() {
+  const navigate = useNavigate();
+  const [step, setStep] = useState('input'); // 'input' or 'result'
+  const [loading, setLoading] = useState(false);
+  const [profile, setProfile] = useState(null);
+  const [identityDescription, setIdentityDescription] = useState('');
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [futurePath, setFuturePath] = useState(null);
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    const profiles = await base44.entities.BaselineProfile.list('-created_date', 1);
+    if (profiles.length === 0) {
+      navigate(createPageUrl('Intake'));
+      return;
+    }
+    setProfile(profiles[0]);
+  };
+
+  const handleGenerate = async () => {
+    if (!identityDescription.trim() && selectedTags.length === 0) {
+      toast.error('Please describe your ideal self or select some identity tags');
+      return;
+    }
+
+    setLoading(true);
+
+    const prompt = `You are a "Future Self Simulator." Generate a compassionate, aspirational narrative showing how someone becomes their ideal identity through aligned habits.
+
+Current Profile:
+- Sleep: ${profile.sleep_hours} hours/night
+- Work: ${profile.work_hours} hours/day
+- Movement: ${profile.movement_days} days/week
+- Screen time: ${profile.screen_time} hours/day
+- Stress level: ${profile.stress_level}/10
+- Fulfillment: ${profile.fulfillment_level}/10
+- Relationship quality: ${profile.relationship_quality}/10
+- Self-description: "${profile.self_description || 'No description provided'}"
+
+DESIRED IDENTITY: ${identityDescription || 'Not specified'}
+IDENTITY QUALITIES: ${selectedTags.join(', ') || 'None selected'}
+
+First, suggest 3-5 specific habits that would help them embody this identity.
+
+Then generate their IDENTITY-ALIGNED future self for 1, 3, and 5 years. Use second-person ("You..."). Show how identity shapes daily choices, which shape life outcomes. Be vivid, inspiring, and authentic. Focus on lifestyle, emotional tone, relationships, energy, and well-being. Never mention diseases or medical diagnoses.
+
+For each timeframe, also provide projected metrics (1-10 scale): energy, resilience, relationships, work, inner_life.`;
+
+    const response = await base44.integrations.Core.InvokeLLM({
+      prompt,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          suggested_habits: { type: "array", items: { type: "string" } },
+          narrative_1yr: { type: "string" },
+          narrative_3yr: { type: "string" },
+          narrative_5yr: { type: "string" },
+          metrics_1yr: { 
+            type: "object",
+            properties: {
+              energy: { type: "number" },
+              resilience: { type: "number" },
+              relationships: { type: "number" },
+              work: { type: "number" },
+              inner_life: { type: "number" }
+            }
+          },
+          metrics_3yr: { 
+            type: "object",
+            properties: {
+              energy: { type: "number" },
+              resilience: { type: "number" },
+              relationships: { type: "number" },
+              work: { type: "number" },
+              inner_life: { type: "number" }
+            }
+          },
+          metrics_5yr: { 
+            type: "object",
+            properties: {
+              energy: { type: "number" },
+              resilience: { type: "number" },
+              relationships: { type: "number" },
+              work: { type: "number" },
+              inner_life: { type: "number" }
+            }
+          }
+        }
+      }
+    });
+
+    // Save the identity path
+    const newPath = await base44.entities.FuturePath.create({
+      type: 'identity',
+      title: `Identity: ${selectedTags.slice(0, 2).join(', ')}`,
+      inputs: profile,
+      identity_description: identityDescription,
+      identity_tags: selectedTags,
+      ...response
+ 
