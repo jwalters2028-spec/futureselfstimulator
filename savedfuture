@@ -1,0 +1,116 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Link, useNavigate } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
+import { base44 } from '@/api/base44Client';
+import { Button } from '@/components/ui/button';
+import { 
+  ArrowLeft, 
+  Clock, 
+  GitBranch, 
+  Sparkles, 
+  Trash2, 
+  Eye,
+  Plus
+} from 'lucide-react';
+import { format } from 'date-fns';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import FutureNarrative from '@/components/FutureNarrative';
+
+const typeConfig = {
+  baseline: { 
+    label: 'Baseline', 
+    icon: Clock, 
+    color: 'amber',
+    bgClass: 'bg-amber-100',
+    textClass: 'text-amber-700'
+  },
+  habit_change: { 
+    label: 'Habit Change', 
+    icon: GitBranch, 
+    color: 'emerald',
+    bgClass: 'bg-emerald-100',
+    textClass: 'text-emerald-700'
+  },
+  identity: { 
+    label: 'Identity Path', 
+    icon: Sparkles, 
+    color: 'violet',
+    bgClass: 'bg-violet-100',
+    textClass: 'text-violet-700'
+  }
+};
+
+export default function SavedFutures() {
+  const navigate = useNavigate();
+  const [futures, setFutures] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedFuture, setSelectedFuture] = useState(null);
+
+  useEffect(() => {
+    loadFutures();
+  }, []);
+
+  const loadFutures = async () => {
+    const paths = await base44.entities.FuturePath.list('-created_date');
+    setFutures(paths);
+    setLoading(false);
+  };
+
+  const handleDelete = async (id) => {
+    await base44.entities.FuturePath.delete(id);
+    setFutures(futures.filter(f => f.id !== id));
+    if (selectedFuture?.id === id) {
+      setSelectedFuture(null);
+    }
+  };
+
+  if (selectedFuture) {
+    const config = typeConfig[selectedFuture.type] || typeConfig.baseline;
+    
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-violet-50/50">
+        <div className="max-w-5xl mx-auto px-6 py-12 md:py-20">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <Button
+              variant="ghost"
+              onClick={() => setSelectedFuture(null)}
+              className="mb-6"
+            >
+              <ArrowLeft className="w-5 h-5 mr-2" />
+              Back to Saved Futures
+            </Button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`p-2 rounded-xl ${config.bgClass}`}>
+                <config.icon className={`w-5 h-5 ${config.textClass}`} />
+              </div>
+              <span className={`text-sm font-medium ${config.textClass}`}>
+                {config.label}
+              </span>
+            </div>
+            
+            <h1 className="text-2xl md:text-3xl font-light text-slate-800">
+              {selectedFuture.title || 'Saved Future'}
+            </h1>
+            
+            {selectedFuture.created_date && (
+              <p className="text-slate-500 mt-2">
+                Created {format(new Date(selectedFuture.created_date), 'MMMM d, yyyy')}
+              </p>
+            )}
+          </motion.div>
