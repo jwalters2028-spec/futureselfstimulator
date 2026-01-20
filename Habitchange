@@ -1,0 +1,117 @@
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
+import { base44 } from '@/api/base44Client';
+import { Button } from '@/components/ui/button';
+import { ArrowRight, ArrowLeft } from 'lucide-react';
+import HabitSelector from '@/components/HabitSelector';
+import LoadingState from '@/components/LoadingState';
+
+export default function HabitChange() {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [profile, setProfile] = useState(null);
+  const [selectedHabits, setSelectedHabits] = useState([]);
+  const [customHabit, setCustomHabit] = useState('');
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    const profiles = await base44.entities.BaselineProfile.list('-created_date', 1);
+    if (profiles.length === 0) {
+      navigate(createPageUrl('Intake'));
+      return;
+    }
+    setProfile(profiles[0]);
+  };
+
+  const handleAddCustom = () => {
+    if (customHabit.trim()) {
+      setSelectedHabits([...selectedHabits, customHabit.trim()]);
+      setCustomHabit('');
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (selectedHabits.length === 0) return;
+    
+    setLoading(true);
+
+    const habitLabels = {
+      'sleep_earlier': 'sleeping 1 hour earlier each night',
+      'walk_daily': 'walking 30 minutes daily',
+      'reduce_screen': 'reducing screen time by 2 hours',
+      'deep_work': 'doing 2 hours of deep, focused work',
+      'social_connection': 'having weekly quality time with loved ones',
+      'journaling': 'journaling for 10 minutes daily'
+    };
+
+    const habitDescriptions = selectedHabits.map(h => habitLabels[h] || h).join(', ');
+
+    const prompt = `You are a "Future Self Simulator." Generate a compassionate, honest, non-clinical narrative showing how someone's future self improves through small, consistent habit changes.
+
+Current Profile:
+- Sleep: ${profile.sleep_hours} hours/night
+- Work: ${profile.work_hours} hours/day
+- Movement: ${profile.movement_days} days/week
+- Screen time: ${profile.screen_time} hours/day
+- Stress level: ${profile.stress_level}/10
+- Fulfillment: ${profile.fulfillment_level}/10
+- Relationship quality: ${profile.relationship_quality}/10
+- Self-description: "${profile.self_description || 'No description provided'}"
+
+HABIT CHANGES they commit to: ${habitDescriptions}
+
+Generate their IMPROVED future self for 1, 3, and 5 years WITH these consistent changes. Use second-person ("You..."). Be vivid, hopeful, and realistic. Show the compound effects of small changes. Focus on lifestyle, emotional tone, relationships, energy, and well-being. Never mention diseases or medical diagnoses.
+
+For each timeframe, also provide improved metrics (1-10 scale): energy, resilience, relationships, work, inner_life.`;
+
+    const response = await base44.integrations.Core.InvokeLLM({
+      prompt,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          narrative_1yr: { type: "string" },
+          narrative_3yr: { type: "string" },
+          narrative_5yr: { type: "string" },
+          metrics_1yr: { 
+            type: "object",
+            properties: {
+              energy: { type: "number" },
+              resilience: { type: "number" },
+              relationships: { type: "number" },
+              work: { type: "number" },
+              inner_life: { type: "number" }
+            }
+          },
+          metrics_3yr: { 
+            type: "object",
+            properties: {
+              energy: { type: "number" },
+              resilience: { type: "number" },
+              relationships: { type: "number" },
+              work: { type: "number" },
+              inner_life: { type: "number" }
+            }
+          },
+          metrics_5yr: { 
+            type: "object",
+            properties: {
+              energy: { type: "number" },
+              resilience: { type: "number" },
+              relationships: { type: "number" },
+              work: { type: "number" },
+              inner_life: { type: "number" }
+            }
+          }
+        }
+      }
+    });
+
+    // Save the habit change future
+    const newPath = await base44.entities.FuturePath.create({
+      type: 'habit_change',
+ 
