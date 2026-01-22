@@ -1,0 +1,30 @@
+import React from 'react';
+import { motion } from 'framer-motion';
+import { 
+  Moon, 
+  Footprints, 
+  MonitorOff, 
+  Brain, 
+  Users, 
+  BookOpen,
+  Plus,
+  Check
+} from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+
+const presetHabits = [
+  { id: 'sleep_earlier', label: 'Sleep Earlier', icon: Moon, description: '+1 hour of sleep nightly' },
+  { id: 'walk_daily', label: 'Walk Daily', icon: Footprints, description: '30 minutes of walking' },
+  { id: 'reduce_screen', label: 'Reduce Screen Time', icon: MonitorOff, description: '-2 hours of screens' },
+  { id: 'deep_work', label: 'Deep Work Blocks', icon: Brain, description: '2 hours of focused work' },
+  { id: 'social_connection', label: 'Weekly Social Connection', icon: Users, description: 'Quality time with loved ones' },
+  { id: 'journaling', label: 'Daily Journaling', icon: BookOpen, description: '10 minutes of reflection' }
+];
+
+export default function HabitSelector({ selectedHabits, onSelect, customHabit, onCustomHabitChange, onAddCustom, maxSelections = 3 }) {
+  const toggleHabit = (habitId) => {
+    if (selectedHabits.includes(habitId)) {
+      onSelect(selectedHabits.filter(h => h !== habitId));
+    } else if (selectedHabits.length < maxSelections) {
+      onSelect([...selectedHabits, habitId]);
