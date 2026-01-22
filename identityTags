@@ -1,0 +1,30 @@
+import React from 'react';
+import { motion } from 'framer-motion';
+import { Check } from 'lucide-react';
+
+const identityTags = [
+  { id: 'calm', label: 'Calm', emoji: '🧘' },
+  { id: 'strategic', label: 'Strategic', emoji: '♟️' },
+  { id: 'grounded', label: 'Grounded', emoji: '🌳' },
+  { id: 'creative', label: 'Creative', emoji: '🎨' },
+  { id: 'disciplined', label: 'Disciplined', emoji: '⚡' },
+  { id: 'compassionate', label: 'Compassionate', emoji: '💜' },
+  { id: 'adventurous', label: 'Adventurous', emoji: '🌍' },
+  { id: 'focused', label: 'Focused', emoji: '🎯' },
+  { id: 'resilient', label: 'Resilient', emoji: '💪' },
+  { id: 'authentic', label: 'Authentic', emoji: '✨' },
+  { id: 'connected', label: 'Connected', emoji: '🤝' },
+  { id: 'wise', label: 'Wise', emoji: '🦉' }
+];
+
+export default function IdentityTags({ selectedTags, onSelect, maxSelections = 4 }) {
+  const toggleTag = (tagId) => {
+    if (selectedTags.includes(tagId)) {
+      onSelect(selectedTags.filter(t => t !== tagId));
+    } else if (selectedTags.length < maxSelections) {
+      onSelect([...selectedTags, tagId]);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
