@@ -1,0 +1,30 @@
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Calendar } from 'lucide-react';
+import MetricsDisplay from './MetricsDisplay';
+
+const timeframes = [
+  { key: '1yr', label: '1 Year', years: 1 },
+  { key: '3yr', label: '3 Years', years: 3 },
+  { key: '5yr', label: '5 Years', years: 5 }
+];
+
+export default function FutureNarrative({ 
+  narrative1yr, 
+  narrative3yr, 
+  narrative5yr,
+  metrics1yr,
+  metrics3yr,
+  metrics5yr,
+  comparisonMetrics1yr,
+  comparisonMetrics3yr,
+  comparisonMetrics5yr,
+  title = "Your Future Self"
+}) {
+  const [activeTab, setActiveTab] = useState('1yr');
+
+  const narratives = {
+    '1yr': narrative1yr,
+    '3yr': narrative3yr,
+    '5yr': narrative5yr
+  };
