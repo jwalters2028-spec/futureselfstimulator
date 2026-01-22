@@ -1,0 +1,31 @@
+import React from 'react';
+import { motion } from 'framer-motion';
+import { Zap, Heart, Users, Briefcase, Sparkles } from 'lucide-react';
+
+const metricConfig = {
+  energy: { icon: Zap, label: 'Energy', color: 'amber' },
+  resilience: { icon: Heart, label: 'Emotional Resilience', color: 'rose' },
+  relationships: { icon: Users, label: 'Relationships', color: 'violet' },
+  work: { icon: Briefcase, label: 'Work Trajectory', color: 'blue' },
+  inner_life: { icon: Sparkles, label: 'Inner Life', color: 'emerald' }
+};
+
+const colorClasses = {
+  amber: { bg: 'bg-amber-500', light: 'bg-amber-100', text: 'text-amber-600' },
+  rose: { bg: 'bg-rose-500', light: 'bg-rose-100', text: 'text-rose-600' },
+  violet: { bg: 'bg-violet-500', light: 'bg-violet-100', text: 'text-violet-600' },
+  blue: { bg: 'bg-blue-500', light: 'bg-blue-100', text: 'text-blue-600' },
+  emerald: { bg: 'bg-emerald-500', light: 'bg-emerald-100', text: 'text-emerald-600' }
+};
+
+export default function MetricsDisplay({ metrics, comparison }) {
+  if (!metrics) return null;
+
+  return (
+    <div className="space-y-4">
+      {Object.entries(metricConfig).map(([key, config], index) => {
+        const value = metrics[key] || 0;
+        const compValue = comparison?.[key];
+        const Icon = config.icon;
+        const colors = colorClasses[config.color];
+        const diff = compValue !== und
